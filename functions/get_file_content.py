@@ -1,7 +1,7 @@
 import os
 from config import MAX_CHARS
 
-def get_files_content(working_directory, file_path):
+def get_file_content(working_directory, file_path):
     try:
         abs_path = os.path.abspath(working_directory)
         target_path = os.path.abspath(os.path.join(abs_path, file_path))
