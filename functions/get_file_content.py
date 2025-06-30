@@ -12,7 +12,7 @@ def get_file_content(working_directory, file_path):
         if not os.path.isfile(target_path):
             return f'Error: File not found or is not a regular file: "{file_path}"'
 
-        with open(target_path, "r") as file:
+        with open(target_path, 'r') as file:
             suffix = ''
             if os.path.getsize(target_path) > MAX_CHARS:
                 suffix = '\n[...File "{file_path}" truncated at 10000 characters]'
