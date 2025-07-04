@@ -5,6 +5,7 @@ from google.genai import types, Client
 from functions.call_function import call_function
 from prompts import system_prompt
 from functions.available_functions import available_functions
+from config import MAX_ITERS
 
 def main():
     if len(sys.argv) < 2:
@@ -25,30 +26,40 @@ def main():
     ]
     generate_content(client, messages, verbose)
 
-def generate_content(client: Client, messages, verbose):
-    response = client.models.generate_content(
-        model="gemini-2.0-flash-001", 
-        contents=messages,
-        config=types.GenerateContentConfig(
-            tools=[available_functions],
-            system_instruction=system_prompt,
+def generate_content(client: Client, messages: list, verbose):
+    iters = 0
+    while iters < MAX_ITERS:
+        iters += 1
+
+        response = client.models.generate_content(
+            model="gemini-2.0-flash-001", 
+            contents=messages,
+            config=types.GenerateContentConfig(
+                tools=[available_functions],
+                system_instruction=system_prompt,
+            )
         )
-    )
-    if verbose:
-        print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-        print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
 
-    if not response.function_calls:
-        return response.text
+        if response.candidates != None:
+            for candidate in response.candidates:
+                messages.append(candidate.content)
 
-    for function_call_part in response.function_calls:
-        function_call_result = call_function(function_call_part, verbose)
-        if (
-            not function_call_result.parts or 
-            not function_call_result.parts[0].function_response
-        ):
-            raise Exception('Error: empty function call result')
-        print(f"-> {function_call_result.parts[0].function_response.response}")
+        if verbose and response.usage_metadata:
+            print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
+            print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+
+        if not response.function_calls:
+            print(f"->{response.text}")
+            return
+
+        for function_call_part in response.function_calls:
+            function_call_result = call_function(function_call_part, verbose)
+            messages.append(function_call_result)
+            if (
+                not function_call_result.parts or 
+                not function_call_result.parts[0].function_response
+            ):
+                raise Exception('Error: empty function call result')
 
 if __name__ == "__main__":
     main()
