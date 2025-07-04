@@ -2,6 +2,7 @@ import os
 import sys
 from dotenv import load_dotenv
 from google.genai import types, Client
+from functions.call_function import call_function
 from prompts import system_prompt
 from functions.available_functions import available_functions
 
@@ -41,7 +42,13 @@ def generate_content(client: Client, messages, verbose):
         return response.text
 
     for function_call_part in response.function_calls:
-        print(f"Calling function: {function_call_part.name}({function_call_part.args})")
+        function_call_result = call_function(function_call_part, verbose)
+        if (
+            not function_call_result.parts or 
+            not function_call_result.parts[0].function_response
+        ):
+            raise Exception('Error: empty function call result')
+        print(f"-> {function_call_result.parts[0].function_response.response}")
 
 if __name__ == "__main__":
     main()
